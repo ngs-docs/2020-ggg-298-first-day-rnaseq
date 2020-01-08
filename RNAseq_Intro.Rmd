@@ -2,9 +2,7 @@
 title: "GGG298-RNAseq"
 author: "Your Name"
 date: "1/8/2020"
-output:
-  pdf_document: default
-  html_document: default
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -33,15 +31,29 @@ print(data)
 
 ```{r dge, echo=FALSE}
 group <- c(rep("mut", 2), rep("wt", 2))
+# estimate dispersion across all genes
 dge = DGEList(counts=data, group=group)
 dge <- estimateCommonDisp(dge)
 dge <- estimateTagwiseDisp(dge)
 ```
 
-## MA-plot
-This MA plot was created with edgeR. The MA plot provides a global view of the relationship between the expression change between conditions (log ratios, M), the average expression strength of the genes (average mean, A) and the ability of the algorithm to detect differential gene expression: genes that pass the significance threshold are colored in red.
+## MA-plots
+This MA plot was created with edgeR. The MA plot provides a global view of the relationship between the expression change between conditions (log ratios, M), the average expression strength of the genes (average mean, A) and the ability of the algorithm to detect differential gene expression: genes that pass the significance threshold (FDR < 0.2) are colored in red.
 
-```{r MA plot, echo=FALSE}
+First, we can look at a sample of top differentially expressed genes:
+
+```{r most DE, echo=FALSE}
+## test for diff between 2 groups -binomial counts
+et <- exactTest(dge, pair=c("wt", "mut"))
+etp <- topTags(et, n=10)
+etp$table$logFC = -etp$table$logFC
+topTags(et)
+```
+
+Then we can play around with plotting:
+
+```{r MA plot100, echo=FALSE}
+## test for diff between 2 groups -binomial counts
 et <- exactTest(dge, pair=c("wt", "mut"))
 etp <- topTags(et, n=100000)
 etp$table$logFC = -etp$table$logFC
@@ -53,7 +65,8 @@ xlim=c(-3, 20), ylim=c(-12, 12), pch=20, cex=.3,
 col = ifelse( etp$table$FDR < .2, "red", "black" ) )
 ```
 
-**Question:** Why are there more black points on the lefthand side of the x-axis than on the right?
+**Figure 1.** An MA plot of differentially expressed genes (FDR < 0.2).
+
 
 ``` {r MA save, include=FALSE}
 pdf("yeast-edgeR-MA-plot.rmd.pdf")
@@ -65,11 +78,28 @@ col = ifelse( etp$table$FDR < .2, "red", "black" ) )
 dev.off()
 ```
 
+```{r MA plot FDR, echo=FALSE}
+et <- exactTest(dge, pair=c("wt", "mut"))
+etp <- topTags(et, n=100000)
+etp$table$logFC = -etp$table$logFC
+
+plot(
+etp$table$logCPM,
+etp$table$logFC,
+xlim=c(-3, 20), ylim=c(-12, 12), pch=20, cex=.3,
+col = ifelse( etp$table$FDR < .1, "red", "black" ) )
+```
+
+**Figure 2.** An MA plot of differentially expressed genes (FDR < 0.1).
+
+
 ## MDS-plot
-This MDS plot was created with edgeR. It draws a multi-dimensional scaling plot of the RNA samples in which distances correspond to leading log-fold-changes between each pair of RNA samples.
+This MDS plot was created with edgeR. It draws a multi-dimensional scaling plot of the RNA samples in which distances correspond to leading log-fold-changes between each of the RNA samples.
 ``` {r MDS plot, echo=FALSE}
 plotMDS(dge, labels=labels)
 ```
+
+**Figure 3.** An MDS plot of the foure RNA samples--A, B, C, D.
 
 ``` {r MDS save, include=FALSE}
 pdf("yeast-edgeR-MDS.rmd.pdf")
