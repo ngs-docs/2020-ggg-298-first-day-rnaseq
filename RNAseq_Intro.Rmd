@@ -1,8 +1,21 @@
+---
+title: "GGG298-RNAseq"
+author: "Your Name"
+date: "1/8/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("edgeR")
+```
+
 ### RNAseq Analysis
 This analysis uses the edgeR package to visualize the counts of data from [Schurch et al, 2016](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4878611/).
 
-```{r setup, echo=TRUE}
-library("edgeR")
+```{r initial, echo=FALSE}
 files <- c(
 "ERR458493.fastq.gz.quant.counts",
 "ERR458494.fastq.gz.quant.counts",
@@ -12,42 +25,58 @@ labels=c("A", "B", "C", "D")
 data <- readDGE(files)
 ```
 
-```{r data, echo=TRUE}
+```{r data, echo=FALSE}
 print(data)
 ```
 
-###
 
-```{r dge, echo=TRUE}
+
+```{r dge, echo=FALSE}
 group <- c(rep("mut", 2), rep("wt", 2))
 dge = DGEList(counts=data, group=group)
 dge <- estimateCommonDisp(dge)
 dge <- estimateTagwiseDisp(dge)
 ```
 
-# Make an MA-plot
+## MA-plot
+This MA plot was created with edgeR. The MA plot provides a global view of the relationship between the expression change between conditions (log ratios, M), the average expression strength of the genes (average mean, A) and the ability of the algorithm to detect differential gene expression: genes that pass the significance threshold are colored in red.
 
-```{r MA plot}
+```{r MA plot, echo=FALSE}
 et <- exactTest(dge, pair=c("wt", "mut"))
 etp <- topTags(et, n=100000)
 etp$table$logFC = -etp$table$logFC
-#pdf("yeast-edgeR-MA-plot.pdf")
+
 plot(
 etp$table$logCPM,
 etp$table$logFC,
 xlim=c(-3, 20), ylim=c(-12, 12), pch=20, cex=.3,
 col = ifelse( etp$table$FDR < .2, "red", "black" ) )
-#dev.off()
 ```
 
-# plot MDS
+**Question:** Why are there more black points on the lefthand side of the x-axis than on the right?
 
-``` {r MDS plot, include=FALSE}
-pdf("yeast-edgeR-MDS.pdf")
+``` {r MA save, include=FALSE}
+pdf("yeast-edgeR-MA-plot.rmd.pdf")
+plot(
+etp$table$logCPM,
+etp$table$logFC,
+xlim=c(-3, 20), ylim=c(-12, 12), pch=20, cex=.3,
+col = ifelse( etp$table$FDR < .2, "red", "black" ) )
+dev.off()
+```
+
+## MDS-plot
+This MDS plot was created with edgeR. It draws a multi-dimensional scaling plot of the RNA samples in which distances correspond to leading log-fold-changes between each pair of RNA samples.
+``` {r MDS plot, echo=FALSE}
+plotMDS(dge, labels=labels)
+```
+
+``` {r MDS save, include=FALSE}
+pdf("yeast-edgeR-MDS.rmd.pdf")
 plotMDS(dge, labels=labels)
 dev.off()
 ```
 
 ```{r csv, include=FALSE}
 # output CSV for 0-6 hr
-write.csv(etp$table, "yeast-edgeR.csv")
+write.csv(etp$table, "yeast-edgeR.rmd.csv")
